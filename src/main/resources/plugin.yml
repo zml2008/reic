@@ -1,0 +1,7 @@
+name: ReIC
+main: com.sk89q.reic.ReIC
+version: "${project.version}"
+commands:
+    reic:
+        description: ReIC commands
+        usage: /<command>
