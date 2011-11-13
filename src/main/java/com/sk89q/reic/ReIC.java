@@ -93,7 +93,8 @@ public class ReIC extends AbstractComponent {
 
         configurations.register("Repeater", new RepeaterIC.RepeaterICFactory(), siso, "Repeat", "Diode");
         configurations.register("Clock", new ClockIC.ClockICFactory(), siso);
-        configurations.register("Monostable", new MonostableIC.MonostableICFactory(), siso, "Delay");
+        configurations.register("Delay", new DelayIC.DelayICFactory(), siso);
+        configurations.register("Monostable", new MonostableIC.MonostableICFactory(), siso);
         configurations.register("Midi", new MidiIC.MidiICFactory(), siso);
         configurations.register("TimeOfDay", new TimeTriggerIC.TimeTriggerICFactory(), siso, "Time");
 

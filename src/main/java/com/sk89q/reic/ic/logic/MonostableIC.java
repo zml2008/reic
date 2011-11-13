@@ -34,44 +34,75 @@ import com.sk89q.reic.State;
 public class MonostableIC extends AbstractIC {
     
     private int delay;
+    private int duration;
+    private boolean isHigh = false;
     
-    public MonostableIC(Block block, State state, int delay) {
+    public MonostableIC(Block block, State state, int delay, int duration) {
         super(block, state);
         this.delay = delay;
+        this.duration = duration;
     }
     
     public int getTriggerDelay() {
-        return delay;
+        return 1;
     }
 
     public void trigger() {
-        getState().passthrough(0);
+        if (getState().triggered(0) && getState().in(0)) {
+            getState().out(0, false);
+            isHigh = false;
+            
+            if (delay == 1) {
+                tick();
+            } else {
+                getState().setNextTick(delay - 1);
+            }
+        }
+    }
+
+    public void tick() {
+        if (!isHigh) {
+            getState().out(0, true);
+            getState().setNextTick(duration);
+            isHigh = true;
+        } else {
+            getState().out(0, false);
+        }
     }
 
     public void unload() {
     }
     
     public String getSummary() {
-        return "Will delay the input to the output " + delay + " ticks.";
+        return "Will go high after " + delay + " ticks for " + duration + " ticks.";
     }
 
     public static class MonostableICFactory extends AbstractICFactory {
         public IC create(ReIC reic, Family family, Block sign, String[] lines) throws ICException {
             int delay = 0;
+            int duration = 0;
             
             try {
                 delay = Integer.parseInt(lines[1]);
-                if (delay < 2) {
-                    throw new ICException("The minimum delay is 2.");
+                if (delay < 1) {
+                    throw new ICException("The minimum delay is 1.");
                 }
             } catch (NumberFormatException e) {
                 throw new ICException("The delay (line 2) should be an integer.");
             }
             
-            expectNoArg(lines, 2);
+            try {
+                duration = Integer.parseInt(lines[2]);
+                if (delay < 1) {
+                    throw new ICException("The minimum duration is 1.");
+                }
+            } catch (NumberFormatException e) {
+                throw new ICException("The duration (line 3) should be an integer.");
+            }
+            
             expectNoArg(lines, 3);
             
-            return new MonostableIC(sign, family.createState(sign), delay);
+            return new MonostableIC(sign, family.createState(sign), delay, duration);
         }
 
         public boolean canCreate(Player player) {
@@ -79,16 +110,18 @@ public class MonostableIC extends AbstractIC {
         }
 
         public String getDescription() {
-            return "Outputs the input state after the specified delay time.";
+            return "Goes high after a specified delay and stays high for a specified duration before going low again.";
         }
 
         public ICDocumentation getDocumentation() {
             return new ICDocumentation()
-                    .summary("Outputs the input state after the specified delay time. " +
-                            "If the IC is triggered before the delay fires, then the delay is reset.")
-            		.param("Delay (in ticks)")
-            		.input("Input signal")
-            		.output("Delayed signal");
+                    .summary("When triggered with a high, the output goes low immediately, followed by a high after a specified delay, and then stays high for a specified duration before going low again. " +
+                            "If the IC is triggered before the delay fires or the duration completes, " +
+                            "then the output goes low and the delay is reset.")
+                    .param("Delay (in ticks)")
+                    .param("Duration (in ticks)")
+                    .input("Trigger")
+                    .output("Output signal");
         }
     }
 
