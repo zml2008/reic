@@ -43,7 +43,7 @@ public class ICDocumentation {
     }
     
     public ICDocumentation param(String message) {
-        param(inputs.size(), message);
+        param(parameters.size(), message);
         return this;
     }
     
