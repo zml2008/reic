@@ -29,7 +29,13 @@
     <dependency>
       <groupId>com.sk89q</groupId>
       <artifactId>worldedit</artifactId>
-      <version>4.7</version>
+      <version>5.0</version>
+    </dependency>
+
+    <dependency>
+      <groupId>com.sk89q</groupId>
+      <artifactId>commandbook</artifactId>
+      <version>1.8-SNAPSHOT</version>
     </dependency>
 
     <!-- Bukkit -->

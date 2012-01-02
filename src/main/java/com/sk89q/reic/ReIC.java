@@ -22,6 +22,12 @@ package com.sk89q.reic;
 import java.util.Collection;
 import java.util.List;
 
+import com.sk89q.commandbook.CommandBook;
+import com.sk89q.commandbook.components.AbstractComponent;
+import com.sk89q.commandbook.components.ComponentInformation;
+import com.sk89q.commandbook.events.core.BukkitEvent;
+import com.sk89q.minecraft.util.commands.CommandsManager;
+import com.sk89q.worldedit.blocks.BlockType;
 import org.bukkit.ChatColor;
 import org.bukkit.Chunk;
 import org.bukkit.Material;
@@ -36,7 +42,7 @@ import org.bukkit.event.Event.Priority;
 import org.bukkit.event.Event.Type;
 import org.bukkit.event.block.Action;
 import org.bukkit.event.block.BlockBreakEvent;
-import org.bukkit.event.block.BlockPhysicsBreakEvent;
+// import org.bukkit.event.block.BlockPhysicsBreakEvent; // Custom event
 import org.bukkit.event.block.BlockPhysicsEvent;
 import org.bukkit.event.block.BlockPlaceEvent;
 import org.bukkit.event.block.SignChangeEvent;
@@ -51,17 +57,15 @@ import com.sk89q.minecraft.util.commands.CommandContext;
 import com.sk89q.minecraft.util.commands.CommandException;
 import com.sk89q.minecraft.util.commands.CommandPermissions;
 import com.sk89q.minecraft.util.commands.NestedCommand;
-import com.sk89q.rebar.AbstractComponent;
-import com.sk89q.rebar.BukkitEvent;
-import com.sk89q.rebar.Rebar;
 import com.sk89q.reic.families.SingleInputSingleOutput;
 import com.sk89q.reic.families.TripleInputSingleOutput;
 import com.sk89q.reic.ic.logic.*;
 import com.sk89q.reic.ic.world.*;
-import com.sk89q.reic.util.BlockMaterialUtil;
 import com.sk89q.reic.util.BlockUtil;
 import com.sk89q.reic.util.ChatUtil;
+import org.bukkit.plugin.java.JavaPlugin;
 
+@ComponentInformation(friendlyName = "ReIC", authors = "sk89q", desc = "A CraftBook-inspired integrated circuits package")
 public class ReIC extends AbstractComponent {
 
     private ReIC reIC = this;
@@ -69,22 +73,19 @@ public class ReIC extends AbstractComponent {
     private ICConfigurationManager configurations = new ICConfigurationManager();
     
     public void initialize() {
-        Rebar.getInstance().registerEvents(new BlockListener());
-        Rebar.getInstance().registerEvents(new WorldListener());
-        Rebar.getInstance().registerEvents(new PlayerListener());
-        Rebar.getInstance().registerInterval(tracker, 1, 1);
-        Rebar.getInstance().registerCommands(Commands.class, this);
+        CommandBook.inst().getEventManager().registerEvents(new BlockListener(), this);
+        CommandBook.inst().getEventManager().registerEvents(new WorldListener(), this);
+        CommandBook.inst().getEventManager().registerEvents(new PlayerListener(), this);
+        CommandBook.server().getScheduler().scheduleSyncRepeatingTask(CommandBook.inst(), tracker, 1, 1);
+        registerCommands(Commands.class);
 
         registerICs();
 
-        for (World world : Rebar.server().getWorlds()) {
+        for (World world : CommandBook.server().getWorlds()) {
             for (Chunk chunk : world.getLoadedChunks()) {
                 reIC.loadICs(chunk);
             }
         }
-    }
-
-    public void shutdown() {
     }
     
     private void registerICs() {
@@ -101,7 +102,7 @@ public class ReIC extends AbstractComponent {
         configurations.register("And-3", new AndIC.AndICFactory(), _3iso, "And", "And3");
         configurations.register("MidiPlayer", new MidiPlayerIC.MidiPlayerICFactory(), _3iso);
         configurations.register("Transmitter", new TransmitterIC.TransmitterICFactory(), _3iso, "Xmit", "Transmit");
-        configurations.register("Receiver", new ReceiverIC. ReceiverICFactory(), _3iso, "Receive");
+        configurations.register("Receiver", new ReceiverIC.ReceiverICFactory(), _3iso, "Receive");
     }
 
     public ICConfigurationManager getConfigurationsManager() {
@@ -308,7 +309,8 @@ public class ReIC extends AbstractComponent {
             }
         }
 
-        @Override
+        /*@Override
+        // TODO: Fix/work around Bukkit's lack of this event
         @BukkitEvent(type = Type.BLOCK_PHYSICS_BREAK, priority = Priority.Monitor)
         public void onBlockPhysicsBreak(BlockPhysicsBreakEvent event) {
             if (event.isCancelled()) return;
@@ -318,7 +320,7 @@ public class ReIC extends AbstractComponent {
             if (block.getType() == Material.WALL_SIGN) {
                 tracker.remove(block);
             }
-        }
+        }*/
         
         @Override
         @BukkitEvent(type = Type.BLOCK_PHYSICS, priority = Priority.Monitor)
@@ -326,7 +328,7 @@ public class ReIC extends AbstractComponent {
             Block block = event.getBlock();
 
             if (block.getType() != Material.WALL_SIGN) return;
-            if (!BlockMaterialUtil.isRedstoneSourceBlock(event.getChangedType())) return;
+            if (!BlockType.canTransferRedstone(event.getChangedTypeId())) return;
             
             IC ic = tracker.get(event.getBlock());
 
@@ -384,9 +386,9 @@ public class ReIC extends AbstractComponent {
                 return "No IC named '" + id.toUpperCase() + "' exists.";
             }
             
-            if (!Rebar.getInstance().hasPermission(player, "reic.ic." + id)
+            if (!CommandBook.inst().hasPermission(player, "reic.ic." + id)
                     && (configuration.getFactory() instanceof RestrictedIC ||
-                            !Rebar.getInstance().hasPermission(player, "reic.ic.safe." + id))) {
+                            !CommandBook.inst().hasPermission(player, "reic.ic.safe." + id))) {
                 return "You don't have permission to create this IC.";
             }
             
@@ -444,7 +446,7 @@ public class ReIC extends AbstractComponent {
         @Command(aliases = { "reinit" }, desc = "Re-initialize all ICs", min = 0, max = 0)
         @CommandPermissions({ "reic.reinit" })
         public void reinit(CommandContext context, CommandSender sender) {
-            Server server = Rebar.server();
+            Server server = CommandBook.server();
             server.broadcastMessage(ChatColor.GRAY + "(ReIC integrated circuits are being re-initialized... please wait.)");
             
             for (World world : server.getWorlds()) {

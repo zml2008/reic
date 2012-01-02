@@ -32,8 +32,8 @@ import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
 
+import com.sk89q.commandbook.CommandBook;
 import com.sk89q.minecraft.util.commands.CommandException;
-import com.sk89q.rebar.Rebar;
 import com.sk89q.worldedit.blocks.BlockID;
 import com.sk89q.worldedit.blocks.BlockType;
 import com.sk89q.worldedit.blocks.ClothColor;
@@ -48,7 +48,7 @@ public final class CommandUtil {
     }
     
     private static Server getServer() {
-        return Rebar.getInstance().getServer();
+        return CommandBook.server();
     }
     
     protected static Iterable<Player> checkPlayerMatch(List<Player> players)
